@@ -1,38 +1,34 @@
 <?php
 /**
  * testes_unitarios.php
- * Suíte de Testes Unitários e de Integração para a Cafeteria Aroma & Sabor.
- * 
- * Execução simples pelo terminal:
+ * Suite de Testes Unitarios e de Integracao para Gestao da Cafeteria.
+ *
+ * Execucao:
  *   php testes_unitarios.php
  */
 
 require_once __DIR__ . '/funcoes.php';
 
-// Controle de Resultados
 $totalTestes = 0;
 $testesPassaram = 0;
 $testesFalharam = 0;
 $inicioTempo = microtime(true);
 
-// Cores para saída no terminal (compatível com ANSI)
 function corVerde(string $texto): string { return "\033[32m{$texto}\033[0m"; }
 function corVermelho(string $texto): string { return "\033[31m{$texto}\033[0m"; }
-function corAzul(string $texto): string { return "\033[34m{$texto}\033[0m"; }
-function corAmarelo(string $texto): string { return "\033[33m{$texto}\033[0m"; }
 
 function registrarPassou(string $descricao): void {
     global $totalTestes, $testesPassaram;
     $totalTestes++;
     $testesPassaram++;
-    echo "  " . corVerde("✔ PASS") . " - {$descricao}\n";
+    echo "  " . corVerde("[PASS]") . " {$descricao}\n";
 }
 
 function registrarFalhou(string $descricao, $esperado, $obtido): void {
     global $totalTestes, $testesFalharam;
     $totalTestes++;
     $testesFalharam++;
-    echo "  " . corVermelho("✖ FAIL") . " - {$descricao}\n";
+    echo "  " . corVermelho("[FAIL]") . " {$descricao}\n";
     echo "         Esperado: " . var_export($esperado, true) . "\n";
     echo "         Obtido:   " . var_export($obtido, true) . "\n";
 }
@@ -53,131 +49,95 @@ function assertFalse($condicao, string $descricao): void {
     assertEqual(false, (bool)$condicao, $descricao);
 }
 
-echo "\n" . corAzul("============================================================\n");
-echo corAzul("   ☕ SUÍTE DE TESTES UNITÁRIOS - GESTÃO DA CAFETERIA\n");
-echo corAzul("============================================================\n\n");
+echo "\n--- TESTES UNITARIOS: GESTAO DA CAFETERIA ---\n\n";
 
-// =========================================================================
-// 1. TESTES DE AUTENTICAÇÃO E VERIFICAÇÃO DE SENHAS
-// =========================================================================
-echo corAmarelo("▶ 1. Testes de Autenticação e Senhas (Login)\n");
-
-// 1.1 Senha em texto puro padrão da atividade ('admin123')
+// 1. Autenticacao
+echo "1. Autenticacao e Senhas:\n";
 assertTrue(
     verificarSenha('admin123', 'admin123'),
-    "Deve autenticar com sucesso a senha padrão 'admin123' em texto puro"
+    "Autentica senha em texto puro 'admin123'"
 );
 
-// 1.2 Senha com hash Bcrypt
 $hashBcrypt = password_hash('segredo456', PASSWORD_DEFAULT);
 assertTrue(
     verificarSenha('segredo456', $hashBcrypt),
-    "Deve autenticar com sucesso senha protegida por hash Bcrypt (password_verify)"
+    "Autentica senha com hash Bcrypt"
 );
 
-// 1.3 Senha incorreta deve ser rejeitada
 assertFalse(
     verificarSenha('senha_errada', 'admin123'),
-    "Deve rejeitar senha incorreta para credencial em texto puro"
+    "Rejeita senha incorreta para texto puro"
 );
 assertFalse(
     verificarSenha('senha_errada', $hashBcrypt),
-    "Deve rejeitar senha incorreta para credencial com hash"
+    "Rejeita senha incorreta para hash"
 );
-
-// 1.4 Senhas vazias
 assertFalse(
     verificarSenha('', 'admin123'),
-    "Deve rejeitar quando a senha digitada estiver vazia"
+    "Rejeita senha digitada vazia"
 );
 assertFalse(
     verificarSenha('admin123', ''),
-    "Deve rejeitar quando a senha armazenada estiver vazia"
+    "Rejeita senha armazenada vazia"
 );
 
-// =========================================================================
-// 2. TESTES DE NORMALIZAÇÃO E FORMATAÇÃO DE PREÇOS
-// =========================================================================
-echo "\n" . corAmarelo("▶ 2. Testes de Normalização e Formatação de Preços\n");
+// 2. Precos
+echo "\n2. Normalizacao e Formatacao de Precos:\n";
+assertEqual(14.50, normalizarPreco('14,50'), "Converte '14,50' com virgula para float 14.50");
+assertEqual(14.50, normalizarPreco('14.50'), "Converte '14.50' com ponto para float 14.50");
+assertEqual(25.90, normalizarPreco('R$ 25,90'), "Extrai valor numerico de 'R$ 25,90'");
+assertEqual(0.0, normalizarPreco(''), "Retorna 0.0 para string vazia");
+assertEqual(0.0, normalizarPreco('invalido'), "Retorna 0.0 para texto nao numerico");
+assertEqual('R$ 6,50', formatarMoeda(6.5), "Formata 6.5 como 'R$ 6,50'");
+assertEqual('R$ 14,00', formatarMoeda(14.0), "Formata 14.0 como 'R$ 14,00'");
+assertEqual('R$ 1.250,90', formatarMoeda(1250.90), "Formata milhar com ponto e virgula");
 
-assertEqual(14.50, normalizarPreco('14,50'), "Deve converter '14,50' com vírgula para 14.50 (float)");
-assertEqual(14.50, normalizarPreco('14.50'), "Deve aceitar '14.50' com ponto decimal direto");
-assertEqual(25.90, normalizarPreco('R$ 25,90'), "Deve extrair valor numérico de strings formatadas com 'R$'");
-assertEqual(0.0, normalizarPreco(''), "Deve retornar 0.0 para string vazia");
-assertEqual(0.0, normalizarPreco('invalido'), "Deve retornar 0.0 para texto sem números");
+// 3. Validacao de Itens
+echo "\n3. Validacao de Itens do Cardapio:\n";
+$resValido = validarItemCardapio('Cafe Espresso', 'Cafe', '6,50');
+assertTrue($resValido['valido'], "Item com dados validos deve ser aprovado");
+assertEqual(null, $resValido['erro'], "Item valido sem mensagem de erro");
 
-assertEqual('R$ 6,50', formatarMoeda(6.5), "Deve formatar 6.5 como 'R$ 6,50'");
-assertEqual('R$ 14,00', formatarMoeda(14.0), "Deve formatar 14.0 como 'R$ 14,00'");
-assertEqual('R$ 1.250,90', formatarMoeda(1250.90), "Deve formatar valores na casa dos milhares com ponto e vírgula");
-
-// =========================================================================
-// 3. TESTES DE VALIDAÇÃO DE ITENS DO CARDÁPIO (REGRAS DE NEGÓCIO)
-// =========================================================================
-echo "\n" . corAmarelo("▶ 3. Testes de Validação de Itens do Cardápio (Create / Update)\n");
-
-// 3.1 Item válido completo
-$resValido = validarItemCardapio('Café Espresso', 'Café', '6,50');
-assertTrue($resValido['valido'], "Item com nome, categoria válida e preço deve ser aprovado");
-assertEqual(null, $resValido['erro'], "Item válido não deve conter mensagem de erro");
-
-// 3.2 Nome vazio ou curto
-$resNomeVazio = validarItemCardapio('', 'Café', '6,50');
+$resNomeVazio = validarItemCardapio('', 'Cafe', '6,50');
 assertFalse($resNomeVazio['valido'], "Item com nome vazio deve ser reprovado");
 
-$resNomeCurto = validarItemCardapio('A', 'Café', '6,50');
+$resNomeCurto = validarItemCardapio('A', 'Cafe', '6,50');
 assertFalse($resNomeCurto['valido'], "Item com nome menor que 2 caracteres deve ser reprovado");
 
-// 3.3 Categoria inválida
-$resCatInvalida = validarItemCardapio('Coxinha', 'CategoriaInexistente', '8,00');
-assertFalse($resCatInvalida['valido'], "Item com categoria não permitida deve ser reprovado");
+$resCatInvalida = validarItemCardapio('Item', 'CategoriaInexistente', '8,00');
+assertFalse($resCatInvalida['valido'], "Item com categoria invalida deve ser reprovado");
 
-// 3.4 Preço zero ou negativo
-$resPrecoZero = validarItemCardapio('Água Mineral', 'Bebida Gelada', '0,00');
-assertFalse($resPrecoZero['valido'], "Item com preço zero deve ser reprovado");
+$resPrecoZero = validarItemCardapio('Agua', 'Bebida Gelada', '0,00');
+assertFalse($resPrecoZero['valido'], "Item com preco zero deve ser reprovado");
 
-$resPrecoNegativo = validarItemCardapio('Água Mineral', 'Bebida Gelada', '-5.00');
-assertFalse($resPrecoNegativo['valido'], "Item com preço negativo deve ser reprovado");
+$resPrecoNegativo = validarItemCardapio('Agua', 'Bebida Gelada', '-5.00');
+assertFalse($resPrecoNegativo['valido'], "Item com preco negativo deve ser reprovado");
 
-// =========================================================================
-// 4. TESTES DE VALIDAÇÃO DE ID (PROTEÇÃO CONTRA SQL INJECTION E INVALIDEZ)
-// =========================================================================
-echo "\n" . corAmarelo("▶ 4. Testes de Sanitização de IDs (Editar / Excluir)\n");
-
-assertEqual(1, validarId('1'), "ID '1' em formato string numérica deve retornar inteiro 1");
-assertEqual(42, validarId(42), "ID 42 inteiro deve retornar inteiro 42");
-assertEqual(999, validarId('999'), "ID '999' deve retornar inteiro 999");
-
-assertFalse(validarId('0'), "ID '0' deve ser rejeitado");
-assertFalse(validarId('-5'), "ID negativo '-5' deve ser rejeitado");
-assertFalse(validarId('abc'), "ID alfanumérico 'abc' deve ser rejeitado");
+// 4. Validacao de ID
+echo "\n4. Sanitizacao e Validacao de IDs:\n";
+assertEqual(1, validarId('1'), "ID '1' numerico retorna inteiro 1");
+assertEqual(42, validarId(42), "ID 42 inteiro retorna inteiro 42");
+assertEqual(999, validarId('999'), "ID '999' retorna inteiro 999");
+assertFalse(validarId('0'), "ID zero deve ser rejeitado");
+assertFalse(validarId('-5'), "ID negativo deve ser rejeitado");
+assertFalse(validarId('abc'), "ID alfanumerico deve ser rejeitado");
 assertFalse(validarId(null), "ID nulo deve ser rejeitado");
+assertFalse(validarId("1 OR 1=1"), "Injecao SQL '1 OR 1=1' deve ser rejeitada");
+assertFalse(validarId("1; DROP TABLE usuarios;--"), "Injecao SQL '1; DROP...' deve ser rejeitada");
+assertFalse(validarId("' UNION SELECT 1,2,3--"), "Injecao SQL UNION deve ser rejeitada");
 
-// Tentativas de SQL Injection no parâmetro de URL
-assertFalse(validarId("1 OR 1=1"), "Tentativa de SQL Injection '1 OR 1=1' deve ser rejeitada");
-assertFalse(validarId("1; DROP TABLE usuarios;--"), "Tentativa de injeção '1; DROP TABLE...' deve ser rejeitada");
-assertFalse(validarId("' UNION SELECT 1,2,3--"), "Tentativa de injeção com UNION deve ser rejeitada");
+// 5. Badges
+echo "\n5. Classes CSS de Badges:\n";
+assertEqual('badge-cafe', obterClasseBadge('Cafe'), "Categoria 'Cafe' retorna 'badge-cafe'");
+assertEqual('badge-cafe', obterClasseBadge('cafe'), "Categoria 'cafe' minuscula retorna 'badge-cafe'");
+assertEqual('badge-doce', obterClasseBadge('Doce'), "Categoria 'Doce' retorna 'badge-doce'");
+assertEqual('badge-salgado', obterClasseBadge('Salgado'), "Categoria 'Salgado' retorna 'badge-salgado'");
+assertEqual('badge-bebida', obterClasseBadge('Bebida Gelada'), "Categoria 'Bebida Gelada' retorna 'badge-bebida'");
+assertEqual('badge-padrao', obterClasseBadge('Outros'), "Categoria desconhecida retorna 'badge-padrao'");
 
-// =========================================================================
-// 5. TESTES DE CLASSES CSS / BADGES VISUAIS
-// =========================================================================
-echo "\n" . corAmarelo("▶ 5. Testes de Badges de Categorias\n");
-
-assertEqual('badge-cafe', obterClasseBadge('Café'), "Categoria 'Café' deve retornar 'badge-cafe'");
-assertEqual('badge-cafe', obterClasseBadge('cafe'), "Categoria 'cafe' em minúsculas deve retornar 'badge-cafe'");
-assertEqual('badge-doce', obterClasseBadge('Doce'), "Categoria 'Doce' deve retornar 'badge-doce'");
-assertEqual('badge-salgado', obterClasseBadge('Salgado'), "Categoria 'Salgado' deve retornar 'badge-salgado'");
-assertEqual('badge-bebida', obterClasseBadge('Bebida Gelada'), "Categoria 'Bebida Gelada' deve retornar 'badge-bebida'");
-assertEqual('badge-padrao', obterClasseBadge('Outros'), "Categoria desconhecida deve retornar 'badge-padrao'");
-
-// =========================================================================
-// 6. TESTES DE FLUXO DE CRUD COM PREPARED STATEMENTS (BANCO EM MEMÓRIA)
-// =========================================================================
-echo "\n" . corAmarelo("▶ 6. Testes de Operações de CRUD com Prepared Statements\n");
-
-// Usamos SQLite em memória para testar exatamente os Prepared Statements sem depender de conexão de rede
+// 6. CRUD com Prepared Statements em SQLite memoria
+echo "\n6. Operacoes de CRUD com Prepared Statements (SQLite memoria):\n";
 $dbMemoria = new SQLite3(':memory:');
-
-// Cria tabela idêntica à do projeto
 $dbMemoria->exec("
     CREATE TABLE cardapio (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -189,88 +149,70 @@ $dbMemoria->exec("
     )
 ");
 
-// 6.1 CREATE (Prepared Statement)
+// Create
 $stmtInsert = $dbMemoria->prepare("INSERT INTO cardapio (nome_item, categoria, descricao, preco) VALUES (:nome, :cat, :desc, :preco)");
-$stmtInsert->bindValue(':nome', 'Torta Holandesa', SQLITE3_TEXT);
+$stmtInsert->bindValue(':nome', 'Torta de Limao', SQLITE3_TEXT);
 $stmtInsert->bindValue(':cat', 'Doce', SQLITE3_TEXT);
-$stmtInsert->bindValue(':desc', 'Torta com creme especial e cobertura de ganache.', SQLITE3_TEXT);
+$stmtInsert->bindValue(':desc', 'Torta de limao.', SQLITE3_TEXT);
 $stmtInsert->bindValue(':preco', 16.50, SQLITE3_FLOAT);
 $execInsert = $stmtInsert->execute();
-assertTrue($execInsert !== false, "CREATE: Prepared Statement INSERT deve executar com sucesso");
+assertTrue($execInsert !== false, "CREATE: Prepared statement INSERT executado");
 
 $idCriado = $dbMemoria->lastInsertRowID();
-assertEqual(1, $idCriado, "CREATE: ID gerado deve ser 1");
+assertEqual(1, $idCriado, "CREATE: ID gerado igual a 1");
 
-// 6.2 READ (Prepared Statement)
+// Read
 $stmtSelect = $dbMemoria->prepare("SELECT * FROM cardapio WHERE id = :id");
 $stmtSelect->bindValue(':id', $idCriado, SQLITE3_INTEGER);
 $resSelect = $stmtSelect->execute();
 $itemLido = $resSelect->fetchArray(SQLITE3_ASSOC);
+assertEqual('Torta de Limao', $itemLido['nome_item'], "READ: Nome do item correto");
+assertEqual(16.50, (float)$itemLido['preco'], "READ: Preco do item correto");
 
-assertEqual('Torta Holandesa', $itemLido['nome_item'], "READ: Nome do item lido deve corresponder ao cadastrado");
-assertEqual(16.50, (float)$itemLido['preco'], "READ: Preço do item lido deve corresponder ao cadastrado");
-
-// 6.3 UPDATE (Prepared Statement)
+// Update
 $stmtUpdate = $dbMemoria->prepare("UPDATE cardapio SET nome_item = :nome, preco = :preco WHERE id = :id");
-$stmtUpdate->bindValue(':nome', 'Torta Holandesa Especial', SQLITE3_TEXT);
+$stmtUpdate->bindValue(':nome', 'Torta de Limao Especial', SQLITE3_TEXT);
 $stmtUpdate->bindValue(':preco', 18.00, SQLITE3_FLOAT);
 $stmtUpdate->bindValue(':id', $idCriado, SQLITE3_INTEGER);
 $execUpdate = $stmtUpdate->execute();
-assertTrue($execUpdate !== false, "UPDATE: Prepared Statement UPDATE deve executar com sucesso");
+assertTrue($execUpdate !== false, "UPDATE: Prepared statement UPDATE executado");
 
-// Verifica se o item foi realmente atualizado sem duplicar
 $stmtCheckUpdate = $dbMemoria->prepare("SELECT COUNT(*) as total, nome_item, preco FROM cardapio WHERE id = :id");
 $stmtCheckUpdate->bindValue(':id', $idCriado, SQLITE3_INTEGER);
 $itemAtualizado = $stmtCheckUpdate->execute()->fetchArray(SQLITE3_ASSOC);
+assertEqual(1, $itemAtualizado['total'], "UPDATE: Nao duplicou registro");
+assertEqual('Torta de Limao Especial', $itemAtualizado['nome_item'], "UPDATE: Nome atualizado");
+assertEqual(18.00, (float)$itemAtualizado['preco'], "UPDATE: Preco atualizado");
 
-assertEqual(1, $itemAtualizado['total'], "UPDATE: Não deve criar linhas duplicadas no banco");
-assertEqual('Torta Holandesa Especial', $itemAtualizado['nome_item'], "UPDATE: Nome deve ter sido alterado");
-assertEqual(18.00, (float)$itemAtualizado['preco'], "UPDATE: Preço deve ter sido atualizado");
-
-// 6.4 IMUNIDADE A SQL INJECTION
+// SQL Injection Test
 $stringMaliciosa = "' OR '1'='1";
-$stmtInjectTest = $dbMemoria->prepare("INSERT INTO cardapio (nome_item, categoria, descricao, preco) VALUES (:nome, 'Café', 'Teste', 5.0)");
+$stmtInjectTest = $dbMemoria->prepare("INSERT INTO cardapio (nome_item, categoria, descricao, preco) VALUES (:nome, 'Cafe', 'Teste', 5.0)");
 $stmtInjectTest->bindValue(':nome', $stringMaliciosa, SQLITE3_TEXT);
 $stmtInjectTest->execute();
 
 $stmtCheckInject = $dbMemoria->prepare("SELECT nome_item FROM cardapio WHERE nome_item = :nome");
 $stmtCheckInject->bindValue(':nome', $stringMaliciosa, SQLITE3_TEXT);
 $itemInjetado = $stmtCheckInject->execute()->fetchArray(SQLITE3_ASSOC);
-assertEqual($stringMaliciosa, $itemInjetado['nome_item'], "SEGURANÇA: String com injeção SQL é tratada como texto puro e não quebra a consulta");
+assertEqual($stringMaliciosa, $itemInjetado['nome_item'], "SEGURANCA: String de injecao SQL tratada como texto puro");
 
-// 6.5 DELETE (Prepared Statement)
+// Delete
 $stmtDelete = $dbMemoria->prepare("DELETE FROM cardapio WHERE id = :id");
 $stmtDelete->bindValue(':id', $idCriado, SQLITE3_INTEGER);
 $execDelete = $stmtDelete->execute();
-assertTrue($execDelete !== false, "DELETE: Prepared Statement DELETE deve executar com sucesso");
+assertTrue($execDelete !== false, "DELETE: Prepared statement DELETE executado");
 
-// Confirma que o item foi removido
 $stmtCheckDelete = $dbMemoria->prepare("SELECT * FROM cardapio WHERE id = :id");
 $stmtCheckDelete->bindValue(':id', $idCriado, SQLITE3_INTEGER);
 $itemExcluido = $stmtCheckDelete->execute()->fetchArray(SQLITE3_ASSOC);
-assertFalse($itemExcluido, "DELETE: Item deve ter sido completamente removido da tabela");
+assertFalse($itemExcluido, "DELETE: Item removido da tabela");
 
 $dbMemoria->close();
 
-// =========================================================================
-// RELATÓRIO FINAL
-// =========================================================================
 $tempoTotal = round((microtime(true) - $inicioTempo) * 1000, 2);
 
-echo "\n" . corAzul("============================================================\n");
-echo "  RESULTADO DOS TESTES UNITÁRIOS:\n";
-echo "  Total de Testes: {$totalTestes}\n";
-echo "  " . corVerde("Sucesso: {$testesPassaram}") . "\n";
+echo "\n------------------------------------------------------------\n";
+echo "RESULTADO: {$totalTestes} testes executados | {$testesPassaram} sucesso | {$testesFalharam} falhas ({$tempoTotal} ms)\n";
+echo "------------------------------------------------------------\n\n";
 
-if ($testesFalharam > 0) {
-    echo "  " . corVermelho("Falhas: {$testesFalharam}") . "\n";
-} else {
-    echo "  " . corVerde("Todas as asserções passaram com 100% de sucesso! 🚀") . "\n";
-}
-
-echo "  Tempo de execução: {$tempoTotal} ms\n";
-echo corAzul("============================================================\n\n");
-
-// Retorna código 0 para sucesso ou 1 para falha
 exit($testesFalharam > 0 ? 1 : 0);
 ?>

@@ -1,14 +1,14 @@
 <?php
-// Protege a página: somente usuários autenticados têm acesso
+// Protege a pagina: somente usuarios autenticados tem acesso
 require_once "auth.php";
 
-// Conexão com o banco de dados e funções auxiliares
+// Conexao com o banco de dados e funcoes auxiliares
 require_once "conexao.php";
 require_once "funcoes.php";
 
 $mensagem_erro = "";
 
-// 1. Obtém e valida o ID do item passado via URL (GET) ou formulário (POST)
+// 1. Obtem e valida o ID do item
 $id_bruto = $_GET['id'] ?? ($_POST['id'] ?? null);
 $id_item = validarId($id_bruto);
 
@@ -17,7 +17,7 @@ if ($id_item === false) {
     exit;
 }
 
-// 2. U - UPDATE: Processa a atualização dos dados caso o formulário tenha sido enviado (POST)
+// 2. U - UPDATE: Processa a atualizacao
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $nome_item = trim($_POST['nome_item'] ?? '');
     $categoria = trim($_POST['categoria'] ?? '');
@@ -29,18 +29,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (!$validacao['valido']) {
         $mensagem_erro = $validacao['erro'];
     } else {
-        // Atualização segura utilizando Prepared Statement (mysqli_prepare)
         $sql_update = "UPDATE cardapio SET nome_item = ?, categoria = ?, descricao = ?, preco = ? WHERE id = ?";
         $stmt_update = mysqli_prepare($conexao, $sql_update);
 
         if ($stmt_update) {
-            // "sssdi": string, string, string, double/decimal, integer
             mysqli_stmt_bind_param($stmt_update, "sssdi", $nome_item, $categoria, $descricao, $preco, $id_item);
 
             if (mysqli_stmt_execute($stmt_update)) {
                 mysqli_stmt_close($stmt_update);
                 mysqli_close($conexao);
-                // Redireciona de volta ao painel com mensagem de sucesso
                 header("Location: painel.php?msg=atualizado");
                 exit;
             } else {
@@ -48,12 +45,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 mysqli_stmt_close($stmt_update);
             }
         } else {
-            $mensagem_erro = "Erro na preparação da atualização SQL: " . mysqli_error($conexao);
+            $mensagem_erro = "Erro na preparacao do SQL: " . mysqli_error($conexao);
         }
     }
 }
 
-// 3. Busca os dados atuais do item no banco para preencher o formulário
+// 3. Busca os dados atuais do item
 $sql_select = "SELECT id, nome_item, categoria, descricao, preco FROM cardapio WHERE id = ? LIMIT 1";
 $stmt_select = mysqli_prepare($conexao, $sql_select);
 
@@ -80,51 +77,46 @@ mysqli_stmt_close($stmt_select);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Item #<?= $item_atual['id']; ?> - Cafeteria Aroma & Sabor</title>
+    <title>Editar Item - Gestao da Cafeteria</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Cabeçalho -->
     <header class="cabecalho-sistema">
         <div class="container cabecalho-conteudo">
             <div class="logo-area">
-                <span class="logo-icone">☕</span>
                 <div>
-                    <div class="logo-titulo">Cafeteria Aroma & Sabor</div>
-                    <div class="logo-subtitulo">Edição de Item do Cardápio</div>
+                    <div class="logo-titulo">Gestao da Cafeteria</div>
+                    <div class="logo-subtitulo">Edicao de Item</div>
                 </div>
             </div>
 
             <div class="usuario-area">
                 <a href="painel.php" class="btn btn-secundario">
-                    ⬅️ Voltar ao Painel
+                    Voltar ao Painel
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Conteúdo -->
     <main class="container" style="margin-top: 25px; margin-bottom: 40px; max-width: 800px;">
 
         <?php if (!empty($mensagem_erro)): ?>
             <div class="alerta alerta-erro">
-                <span>⚠️</span>
-                <span><?= htmlspecialchars($mensagem_erro); ?></span>
+                <?= htmlspecialchars($mensagem_erro); ?>
             </div>
         <?php endif; ?>
 
         <div class="card">
             <div class="card-cabecalho">
-                <h2 class="card-titulo">✏️ Atualizar Item: <?= htmlspecialchars($item_atual['nome_item']); ?></h2>
-                <span style="font-size: 0.9rem; color: var(--cor-texto-suave);">ID #<?= $item_atual['id']; ?></span>
+                <h2 class="card-titulo">Editar Item: <?= htmlspecialchars($item_atual['nome_item']); ?></h2>
+                <span style="font-size: 0.9rem; color: var(--cor-texto-suave);">ID: <?= $item_atual['id']; ?></span>
             </div>
 
             <form action="editar_item.php?id=<?= $item_atual['id']; ?>" method="POST" autocomplete="off">
                 <input type="hidden" name="id" value="<?= $item_atual['id']; ?>">
 
                 <div class="grid-form">
-                    <!-- Nome do Item -->
                     <div class="campo-form">
                         <label for="nome_item">Nome do Item *</label>
                         <input 
@@ -136,23 +128,21 @@ mysqli_stmt_close($stmt_select);
                         >
                     </div>
 
-                    <!-- Categoria -->
                     <div class="campo-form">
                         <label for="categoria">Categoria *</label>
                         <select id="categoria" name="categoria" required>
                             <?php
-                            $categorias = ["Café", "Doce", "Salgado", "Bebida Gelada", "Especial de Inverno"];
+                            $categorias = ["Cafe", "Doce", "Salgado", "Bebida Gelada"];
                             foreach ($categorias as $cat) {
-                                $selected = ($item_atual['categoria'] === $cat) ? 'selected' : '';
+                                $selected = (strcasecmp($item_atual['categoria'], $cat) === 0) ? 'selected' : '';
                                 echo "<option value=\"{$cat}\" {$selected}>{$cat}</option>";
                             }
                             ?>
                         </select>
                     </div>
 
-                    <!-- Preço -->
                     <div class="campo-form">
-                        <label for="preco">Preço (R$) *</label>
+                        <label for="preco">Preco (R$) *</label>
                         <input 
                             type="number" 
                             step="0.01" 
@@ -164,9 +154,8 @@ mysqli_stmt_close($stmt_select);
                         >
                     </div>
 
-                    <!-- Descrição -->
                     <div class="campo-form span-full">
-                        <label for="descricao">Descrição dos Ingredientes / Detalhes</label>
+                        <label for="descricao">Descricao</label>
                         <textarea 
                             id="descricao" 
                             name="descricao"
@@ -179,7 +168,7 @@ mysqli_stmt_close($stmt_select);
                         Cancelar
                     </a>
                     <button type="submit" class="btn btn-primario">
-                        💾 Salvar Alterações
+                        Salvar Alteracoes
                     </button>
                 </div>
             </form>
@@ -188,7 +177,7 @@ mysqli_stmt_close($stmt_select);
     </main>
 
     <footer class="rodape">
-        <p>&copy; <?= date('Y'); ?> Cafeteria Aroma & Sabor — Gestão do Cardápio</p>
+        <p>Sistema de Gestao de Cardapio</p>
     </footer>
 
 </body>

@@ -1,4 +1,4 @@
--- Criação do banco de dados da cafeteria
+-- Criacao do banco de dados da cafeteria
 CREATE DATABASE IF NOT EXISTS gestao_cafeteria;
 USE gestao_cafeteria;
 
@@ -10,37 +10,32 @@ CREATE TABLE IF NOT EXISTS usuarios (
     senha VARCHAR(255) NOT NULL
 );
 
--- Tabela para o CRUD do cardápio da cafeteria
+-- Tabela para o CRUD do cardapio da cafeteria
 CREATE TABLE IF NOT EXISTS cardapio (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome_item VARCHAR(100) NOT NULL,
-    categoria VARCHAR(50) NOT NULL, -- Ex: Café, Doce, Salgado, Bebida Gelada
+    categoria VARCHAR(50) NOT NULL,
     descricao TEXT,
     preco DECIMAL(10, 2) NOT NULL,
     disponivel BOOLEAN DEFAULT TRUE
 );
 
--- Inserindo um usuário administrador padrão (Senha: admin123)
--- Caso já exista, não duplica
+-- Inserindo usuario administrador padrao (Senha: admin123)
 INSERT INTO usuarios (nome, usuario, senha)
 SELECT 'Gerente', 'admin', 'admin123'
 WHERE NOT EXISTS (
     SELECT 1 FROM usuarios WHERE usuario = 'admin'
 );
 
--- Inserindo alguns itens iniciais demonstrativos no cardápio
+-- Itens iniciais de exemplo
 INSERT INTO cardapio (nome_item, categoria, descricao, preco, disponivel)
-SELECT 'Café Espresso', 'Café', 'Café puro, encorpado e aromático extraído sob pressão.', 6.50, TRUE
-WHERE NOT EXISTS (SELECT 1 FROM cardapio WHERE nome_item = 'Café Espresso');
+SELECT 'Cafe Espresso', 'Cafe', 'Cafe puro tradicional.', 6.50, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM cardapio WHERE nome_item = 'Cafe Espresso');
 
 INSERT INTO cardapio (nome_item, categoria, descricao, preco, disponivel)
-SELECT 'Cappuccino Tradicional', 'Café', 'Espresso com leite vaporizado e crema aveludada com toque de canela.', 12.00, TRUE
-WHERE NOT EXISTS (SELECT 1 FROM cardapio WHERE nome_item = 'Cappuccino Tradicional');
+SELECT 'Bolo de Cenoura', 'Doce', 'Bolo de cenoura com cobertura de chocolate.', 14.50, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM cardapio WHERE nome_item = 'Bolo de Cenoura');
 
 INSERT INTO cardapio (nome_item, categoria, descricao, preco, disponivel)
-SELECT 'Bolo de Cenoura com Chocolate', 'Doce', 'Fatia generosa de bolo fofinho coberto com brigadeiro cremoso.', 14.50, TRUE
-WHERE NOT EXISTS (SELECT 1 FROM cardapio WHERE nome_item = 'Bolo de Cenoura com Chocolate');
-
-INSERT INTO cardapio (nome_item, categoria, descricao, preco, disponivel)
-SELECT 'Pão de Queijo Mineiro', 'Salgado', 'Pão de queijo quentinho com queijo da Canastra.', 7.00, TRUE
-WHERE NOT EXISTS (SELECT 1 FROM cardapio WHERE nome_item = 'Pão de Queijo Mineiro');
+SELECT 'Pao de Queijo', 'Salgado', 'Pao de queijo tradicional.', 7.00, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM cardapio WHERE nome_item = 'Pao de Queijo');
