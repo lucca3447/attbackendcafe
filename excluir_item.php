@@ -2,14 +2,15 @@
 // Protege a página: somente usuários autenticados têm permissão para excluir
 require_once "auth.php";
 
-// Conexão com o banco de dados
+// Conexão com o banco de dados e funções auxiliares
 require_once "conexao.php";
+require_once "funcoes.php";
 
-// Obtém o ID passado via parâmetro GET
-$id_item = isset($_GET['id']) ? intval($_GET['id']) : 0;
+// Obtém e valida o ID passado via parâmetro GET
+$id_item = validarId($_GET['id'] ?? null);
 
 // Se o ID for inválido, redireciona com mensagem de erro
-if ($id_item <= 0) {
+if ($id_item === false) {
     header("Location: painel.php?erro=id_invalido");
     exit;
 }

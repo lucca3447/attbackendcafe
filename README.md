@@ -39,6 +39,25 @@ Projeto desenvolvido para a atividade prática de gestão de cardápio de cafete
 
 ---
 
+## 🧪 Testes Unitários Automatizados
+
+O projeto inclui uma suíte completa de testes automatizados ([`testes_unitarios.php`](testes_unitarios.php)) que valida regras de negócio, sanitização de entradas, senhas e operações de CRUD com Prepared Statements (usando banco SQLite em memória, sem necessidade de instalar Composer ou dependências externas).
+
+Para rodar os testes:
+```bash
+php testes_unitarios.php
+```
+
+São executadas **48 asserções** cobrindo:
+1. **Autenticação**: Validação de senhas em texto puro (`admin123`) e hashes Bcrypt (`password_verify`), e rejeição de senhas incorretas ou vazias.
+2. **Preços**: Normalização de preços com vírgula (`"14,50"` -> `14.50`) e formatação monetária (`R$ 0,00`).
+3. **Regras de Negócio**: Validação de campos obrigatórios, categorias permitidas e preços positivos.
+4. **Sanitização de IDs**: Rejeição de valores negativos, caracteres alfabéticos e proteção contra injeções SQL (`1 OR 1=1`, `1; DROP TABLE...`).
+5. **Aparência Visual**: Mapeamento de badges CSS por categoria.
+6. **CRUD com Prepared Statements**: Teste do ciclo completo de Create, Read, Update (sem duplicação) e Delete com imunidade comprovada a SQL Injection.
+
+---
+
 ## 🚀 Como Executar o Projeto
 
 ### 1. Configurar o Banco de Dados no phpMyAdmin

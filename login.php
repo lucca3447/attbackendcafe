@@ -10,8 +10,9 @@ if (isset($_SESSION['usuario_id'])) {
     exit;
 }
 
-// Inclui a conexão com o banco de dados
+// Inclui a conexão com o banco de dados e funções auxiliares
 require_once "conexao.php";
+require_once "funcoes.php";
 
 $mensagem_erro = "";
 $mensagem_sucesso = "";
@@ -43,7 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             if ($resultado && $linha = mysqli_fetch_assoc($resultado)) {
                 // Suporta tanto senha com hash seguro (password_verify) quanto texto puro (script padrão da aula)
-                $senhaValida = password_verify($senha, $linha['senha']) || ($senha === $linha['senha']);
+                $senhaValida = verificarSenha($senha, $linha['senha']);
 
                 if ($senhaValida) {
                     // Regenera o ID de sessão para segurança adicional

@@ -2,8 +2,9 @@
 // Protege a página: somente usuários autenticados têm acesso
 require_once "auth.php";
 
-// Conexão com o banco de dados
+// Conexão com o banco de dados e funções auxiliares
 require_once "conexao.php";
+require_once "funcoes.php";
 
 $mensagem_sucesso = "";
 $mensagem_erro = "";
@@ -42,12 +43,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['acao']) && $_POST['ac
     $nome_item = trim($_POST['nome_item'] ?? '');
     $categoria = trim($_POST['categoria'] ?? '');
     $descricao = trim($_POST['descricao'] ?? '');
-    $preco_raw = str_replace(',', '.', trim($_POST['preco'] ?? '0'));
-    $preco = floatval($preco_raw);
+    $preco = normalizarPreco($_POST['preco'] ?? 0);
 
-    // Validações básicas
-    if (empty($nome_item) || empty($categoria) || $preco <= 0) {
-        $mensagem_erro = "Por favor, preencha o nome, selecione a categoria e informe um preço válido maior que zero.";
+    // Validação usando regra de negócio centralizada
+    $validacao = validarItemCardapio($nome_item, $categoria, $preco);
+
+    if (!$validacao['valido']) {
+        $mensagem_erro = $validacao['erro'];
     } else {
         // Inserção segura utilizando Prepared Statement (mysqli_prepare)
         $sql_insert = "INSERT INTO cardapio (nome_item, categoria, descricao, preco) VALUES (?, ?, ?, ?)";
@@ -75,24 +77,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['acao']) && $_POST['ac
 // R - READ: Consulta todos os itens cadastrados no cardápio
 $sql_select = "SELECT id, nome_item, categoria, descricao, preco, disponivel FROM cardapio ORDER BY id DESC";
 $resultado_itens = mysqli_query($conexao, $sql_select);
-
-// Função auxiliar para definir a classe de badge de acordo com a categoria
-function obterClasseBadge($categoria) {
-    switch (mb_strtolower($categoria, 'UTF-8')) {
-        case 'café':
-        case 'cafe':
-            return 'badge-cafe';
-        case 'doce':
-            return 'badge-doce';
-        case 'salgado':
-            return 'badge-salgado';
-        case 'bebida gelada':
-        case 'bebida':
-            return 'badge-bebida';
-        default:
-            return 'badge-padrao';
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -250,7 +234,7 @@ function obterClasseBadge($categoria) {
                                         <?= !empty($item['descricao']) ? nl2br(htmlspecialchars($item['descricao'])) : '<em>Sem descrição cadastrada</em>'; ?>
                                     </td>
                                     <td class="preco-destaque">
-                                        R$ <?= number_format($item['preco'], 2, ',', '.'); ?>
+                                        <?= formatarMoeda((float)$item['preco']); ?>
                                     </td>
                                     <td>
                                         <div class="col-acoes">

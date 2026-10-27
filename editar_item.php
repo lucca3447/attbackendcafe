@@ -2,15 +2,17 @@
 // Protege a página: somente usuários autenticados têm acesso
 require_once "auth.php";
 
-// Conexão com o banco de dados
+// Conexão com o banco de dados e funções auxiliares
 require_once "conexao.php";
+require_once "funcoes.php";
 
 $mensagem_erro = "";
 
 // 1. Obtém e valida o ID do item passado via URL (GET) ou formulário (POST)
-$id_item = isset($_GET['id']) ? intval($_GET['id']) : (isset($_POST['id']) ? intval($_POST['id']) : 0);
+$id_bruto = $_GET['id'] ?? ($_POST['id'] ?? null);
+$id_item = validarId($id_bruto);
 
-if ($id_item <= 0) {
+if ($id_item === false) {
     header("Location: painel.php?erro=id_invalido");
     exit;
 }
@@ -20,11 +22,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $nome_item = trim($_POST['nome_item'] ?? '');
     $categoria = trim($_POST['categoria'] ?? '');
     $descricao = trim($_POST['descricao'] ?? '');
-    $preco_raw = str_replace(',', '.', trim($_POST['preco'] ?? '0'));
-    $preco = floatval($preco_raw);
+    $preco = normalizarPreco($_POST['preco'] ?? 0);
 
-    if (empty($nome_item) || empty($categoria) || $preco <= 0) {
-        $mensagem_erro = "Por favor, preencha todos os campos obrigatórios com valores válidos.";
+    $validacao = validarItemCardapio($nome_item, $categoria, $preco);
+
+    if (!$validacao['valido']) {
+        $mensagem_erro = $validacao['erro'];
     } else {
         // Atualização segura utilizando Prepared Statement (mysqli_prepare)
         $sql_update = "UPDATE cardapio SET nome_item = ?, categoria = ?, descricao = ?, preco = ? WHERE id = ?";
